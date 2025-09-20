@@ -64,19 +64,40 @@ Metrics with an upward-pointing arrow (↑) indicate that higher values are bett
 
 Required software, libraries, or tools to run the code or reproduce the results.
 
-- Python (3.10.13)
-- PyTorch (2.0.1+cu118)
+- Python (≥3.9, <3.12)
+- [uv](https://docs.astral.sh/uv/) - Fast Python package manager
+- PyTorch (≥2.0.0)
 - NumPy (1.23.5)
 - Pandas (1.5.3)
 
 ### Installation
 
-Step-by-step instructions on how to set up the environment and install dependencies.
+This project uses **uv** for fast and reliable dependency management.
 
+#### Option 1: Using uv (Recommended)
 ```sh
-# Example installation commands
+# 1. Install uv (if not already installed)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# 2. Clone the repository
 git clone {git url}
-pip install -r requirements.txt
+cd ESCIM
+
+# 3. Install dependencies and create virtual environment
+uv sync
+
+# 4. Activate the environment (optional - uv run handles this automatically)
+source .venv/bin/activate
+```
+
+#### Option 2: Traditional pip method
+```sh
+# Clone and install with pip (legacy method)
+git clone {git url}
+cd ESCIM
+python -m venv .venv
+source .venv/bin/activate
+pip install fire joblib numpy==1.23.5 pandas==1.5.3 scikit-learn torch torcheval
 ```
 
 ### Download Ali-CCP and Ali-Express Dataset
@@ -85,7 +106,21 @@ pip install -r requirements.txt
 - Ali-Express: https://tianchi.aliyun.com/dataset/74690
 
 ### Preprocessing
+
+#### Using uv (Recommended)
 ```sh
+# 1. Preprocess Ali-CCP dataset
+uv run python Ali_CCP/preprocess.py
+
+# 2. Preprocess Ali-Express dataset
+uv run python Ali_Express/preprocess.py --country=ES
+```
+
+#### Using traditional Python
+```sh
+# Make sure virtual environment is activated
+source .venv/bin/activate
+
 # 1. Preprocess Ali-CCP dataset
 python Ali_CCP/preprocess.py
 
@@ -93,14 +128,71 @@ python Ali_CCP/preprocess.py
 python Ali_Express/preprocess.py --country=ES
 ```
 
-### Command
+### Running the Model
+
+#### Using uv (Recommended)
 ```sh
 # 1. Run ESCIM for the Ali-CCP dataset
-python run.py --dataset=Ali-CCP
+uv run python run.py Ali-CCP
 
 # 2. Run ESCIM for the Ali-Express ES dataset
-python run.py --dataset=Ali-Express --country=ES
+uv run python run.py Ali-Express --country=ES
+
+# 3. Run with different countries
+uv run python run.py Ali-Express --country=FR
+uv run python run.py Ali-Express --country=NL
+uv run python run.py Ali-Express --country=US
+```
+
+#### Using traditional Python
+```sh
+# Make sure virtual environment is activated
+source .venv/bin/activate
+
+# 1. Run ESCIM for the Ali-CCP dataset
+python run.py Ali-CCP
+
+# 2. Run ESCIM for the Ali-Express ES dataset
+python run.py Ali-Express --country=ES
 ```
 
 ### Hyperparameters
 Change the hyperparameters related to training in the 'config.json' file under each dataset's repository.
+
+### Development
+
+#### Adding New Dependencies
+```sh
+# Add a new package
+uv add package-name
+
+# Add a development dependency
+uv add --dev pytest black ruff
+
+# Add a specific version
+uv add "numpy>=1.20,<2.0"
+```
+
+#### Environment Management
+```sh
+# Sync dependencies (install/update based on pyproject.toml)
+uv sync
+
+# Check installed packages
+uv pip list
+
+# Generate requirements.txt (if needed for compatibility)
+uv pip freeze > requirements.txt
+```
+
+## Why uv?
+
+This project uses [uv](https://docs.astral.sh/uv/) for dependency management, offering several advantages:
+
+- **🚀 Speed**: 10-100x faster than pip for package installation
+- **🔒 Reliability**: Deterministic dependency resolution with lock files
+- **🎯 Simplicity**: Single tool for virtual environments and package management  
+- **🔄 Compatibility**: Works with existing pip/PyPI ecosystem
+- **📦 Modern**: Built-in support for pyproject.toml standard
+
+For more information, visit the [uv documentation](https://docs.astral.sh/uv/).
