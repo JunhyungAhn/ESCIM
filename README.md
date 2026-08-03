@@ -1,17 +1,32 @@
 # On Predicting Post-Click Conversion Rate via Counterfactual Inference
 
+[![arXiv](https://img.shields.io/badge/arXiv-2510.04816-b31b1b.svg)](https://arxiv.org/abs/2510.04816)
+[![DOI](https://img.shields.io/badge/DOI-10.1109%2FICDM65498.2025.00008-005EB8.svg)](https://doi.org/10.1109/ICDM65498.2025.00008)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE)
+[![Python](https://img.shields.io/badge/Python-3.9--3.11-3776AB.svg)](https://www.python.org/)
+
+Official implementation of the **Entire Space Counterfactual Inference Multi-task Model (ESCIM)**,
+published at the **IEEE International Conference on Data Mining (ICDM) 2025**.
+
+> Junhyung Ahn, Sanghack Lee. *On Predicting Post-Click Conversion Rate via Counterfactual Inference.*
+> ICDM 2025, pp. 11–20.
+> [[paper]](https://doi.org/10.1109/ICDM65498.2025.00008) [[arXiv]](https://arxiv.org/abs/2510.04816)
+
 ## Table of Contents
 
 1. [Introduction](#introduction)
 2. [Framework](#framework)
-3. [Experimental Results](#results)
+3. [Experimental Results](#experimental-results)
 4. [Setup](#setup)
+5. [Repository Structure](#repository-structure)
+6. [Citation](#citation)
+7. [License](#license)
 
 ## Introduction
 
 Accurately estimating a conversion rate (CVR) is essential in various recommendation domains, such as online advertising systems and e-commerce. Such systems utilize user interaction logs, which consist of impressions, clicks, and conversions. Since both clicked and converted instances are very sparse, it is crucial to collect a substantial amount of logs. Recent works address this issue by devising frameworks that can leverage non-clicked items. However, the discrepancy between clicked and non-clicked items often causes biases in the naively trained CVR prediction model.
 
-Against this background, we attempt to answer "Would the user have converted if he/she had clicked the recommended item?" by proposing a novel conversion label generation method based on counterfactual inference, named the Entire Space Counterfactual Inference Multi-task Model (ESCIM). We initially train a structure causal model (SCM) of user sequential behaviors and conduct a hypothetical intervention (i.e., click) on non-clicked items to infer counterfactual CVR for them. We then introduce several approaches to transform predicted counterfactual CVRs into binary counterfactual conversion labels for the non-clicked samples. Finally, the generated samples are incorporated into the training process. 
+Against this background, we attempt to answer "Would the user have converted if he/she had clicked the recommended item?" by proposing a novel conversion label generation method based on counterfactual inference, named the Entire Space Counterfactual Inference Multi-task Model (ESCIM). We initially train a structural causal model (SCM) of user sequential behaviors and conduct a hypothetical intervention (i.e., click) on non-clicked items to infer counterfactual CVR for them. We then introduce several approaches to transform predicted counterfactual CVRs into binary counterfactual conversion labels for the non-clicked samples. Finally, the generated samples are incorporated into the training process. 
 
 Extensive experiments on public datasets illustrate the superiority of the proposed algorithm. Online A/B testing further empirically validates the effectiveness of our proposed algorithm in real-world scenarios. In addition, we demonstrate improved performances of the proposed method on latent conversion data, showcasing its robustness and superior generalization capabilities.
 
@@ -21,6 +36,9 @@ Extensive experiments on public datasets illustrate the superiority of the propo
 
 
 ## Experimental Results
+
+Each cell reports **CVR AUC / CTCVR AUC**, averaged over five runs with different random seeds.
+Higher is better; the best result per column is in **bold**.
 
 ### Ali-CCP across Backbones
 
@@ -80,7 +98,7 @@ This project uses **uv** for fast and reliable dependency management.
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # 2. Clone the repository
-git clone {git url}
+git clone https://github.com/JunhyungAhn/ESCIM.git
 cd ESCIM
 
 # 3. Install dependencies and create virtual environment
@@ -93,7 +111,7 @@ source .venv/bin/activate
 #### Option 2: Traditional pip method
 ```sh
 # Clone and install with pip (legacy method)
-git clone {git url}
+git clone https://github.com/JunhyungAhn/ESCIM.git
 cd ESCIM
 python -m venv .venv
 source .venv/bin/activate
@@ -157,4 +175,58 @@ python run.py Ali-Express --country=ES
 ```
 
 ### Hyperparameters
-Change the hyperparameters related to training in the 'config.json' file under each dataset's repository.
+
+Training settings live in the `config.json` file under each dataset's directory
+(`Ali_CCP/config.json`, `Ali_Express/config.json`). Key options:
+
+| Key | Accepted values | Description |
+|-----|-----------------|-------------|
+| `train_models` | `"our"` (ESCIM), `"esmm"`, `"escm2-ips"`, `"escm2-dr"`, `"dcmt"`, `"multi-ips"`, `"multi-dr"` | List of models to train. `"our"` runs ESCIM; the rest are baselines. |
+| `labeling_method` | `"max"`, `"ratio"` | Strategy for turning counterfactual CVRs into binary labels, yielding ESCIM-max / ESCIM-ratio. |
+| `backbone_model` | `"mlp"`, `"deepfm"`, `"autoint"`, `"dcnv2"` | Shared feature-extraction backbone. |
+| `cvr_f_loss_weight` | float | Weight of the factual CVR loss (α<sub>F</sub>). |
+| `cvr_cf_loss_weight` | float | Weight of the counterfactual CVR loss (α<sub>CF</sub>). Setting this to `0` reduces the objective to ESCM<sup>2</sup>. |
+| `num_trials` | int | Number of runs with different random seeds. |
+
+## Repository Structure
+
+```
+.
+├── run.py                  # Entry point: `python run.py {Ali-CCP,Ali-Express}`
+├── common/
+│   ├── backbone_models.py  # MLP, DeepFM, AutoInt, DCN-V2
+│   ├── layers.py           # Embedding, self-attention, cross network
+│   └── loss.py             # Loss functions
+├── Ali_CCP/
+│   ├── preprocess.py       # Dataset preparation
+│   ├── dataset.py
+│   ├── train.py            # Training loop + counterfactual label generation
+│   ├── eval.py             # CTR / CVR / CTCVR AUC
+│   ├── config.json         # Hyperparameters
+│   └── models/
+│       ├── escim.py        # Proposed model (SCM + VAE + counterfactual inference)
+│       ├── escm2.py        # ESCM^2 baseline
+│       ├── dcmt.py         # DCMT baseline
+│       └── esmm.py         # ESMM baseline
+└── Ali_Express/            # Same layout, per-country (ES / FR / NL / US)
+```
+
+## Citation
+
+If you find this work useful, please cite:
+
+```bibtex
+@inproceedings{ahn2025escim,
+  author    = {Ahn, Junhyung and Lee, Sanghack},
+  title     = {On Predicting Post-Click Conversion Rate via Counterfactual Inference},
+  booktitle = {IEEE International Conference on Data Mining (ICDM)},
+  pages     = {11--20},
+  publisher = {IEEE},
+  year      = {2025},
+  doi       = {10.1109/ICDM65498.2025.00008}
+}
+```
+
+## License
+
+This project is licensed under the Apache License 2.0 — see the [LICENSE](./LICENSE) file for details.
